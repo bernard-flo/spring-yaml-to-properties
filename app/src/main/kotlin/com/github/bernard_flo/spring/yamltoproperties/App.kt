@@ -111,18 +111,18 @@ fun documentToProperties(
 ): Properties {
 
     val documentMap = documentObject as Map<*, *>
-    return documentEntriesToProperties(documentMap.entries).toMap()
+    return documentMapToProperties(documentMap).toMap()
 }
 
-fun documentEntriesToProperties(
-    documentEntries: Set<Map.Entry<*, *>>,
+fun documentMapToProperties(
+    documentMap: Map<*, *>,
     parentKey: String? = null,
 ): List<Pair<String, Any?>> {
 
-    return documentEntries.flatMap { (key, value) ->
+    return documentMap.entries.flatMap { (key, value) ->
         val currentKey = if (parentKey == null) key.toString() else "$parentKey.$key"
         if (value is Map<*, *>) {
-            documentEntriesToProperties(value.entries, currentKey)
+            documentMapToProperties(value, currentKey)
         } else {
             listOf(currentKey to value)
         }
@@ -137,8 +137,8 @@ fun mergeProperties(
     val profiledPropertiesMap = profiledPropertiesList
         .groupBy { it.profile }
         .mapValues {
-            it.value.reduce { (profile, mergedProperties), (_, properties) ->
-                ProfiledProperties(profile, mergedProperties + properties)
+            it.value.reduce { (profile, accProperties), (_, properties) ->
+                ProfiledProperties(profile, accProperties + properties)
             }
         }
 
@@ -159,22 +159,20 @@ fun applyEnv(
 ): Map<Profile, ProfiledProperties> {
 
     val profileEnvMap = Path(envDir).listDirectoryEntries("*.json")
-        .map { envPath ->
+        .associate { envPath ->
             val profile = envPath.fileName.toString().removeSuffix(".json")
-            val envData = Json.decodeFromString(envPath.readText()) as Map<String, String>
-            profile to envData
+            val env = Json.decodeFromString(envPath.readText()) as Map<String, String>
+            profile to env
         }
-        .toMap()
 
     return profiledPropertiesMap
         .mapValues { (profile, profiledProperties) ->
-            ProfiledProperties(
-                profile,
-                applyEnv(
-                    profiledProperties.properties,
-                    profileEnvMap[profile]!!,
-                ),
-            )
+            val env = profileEnvMap[profile]
+            if (env != null) {
+                ProfiledProperties(profile, applyEnv(profiledProperties.properties, env))
+            } else {
+                ProfiledProperties(profile, profiledProperties.properties)
+            }
         }
 }
 
@@ -183,11 +181,10 @@ fun applyEnv(
     env: Map<String, String>,
 ): Properties {
 
-    return properties.entries
-        .map { (key, value) ->
-            key to applyEnv(value, env)
+    return properties
+        .mapValues { (_, value) ->
+            applyEnv(value, env)
         }
-        .toMap()
 }
 
 fun applyEnv(
@@ -200,10 +197,11 @@ fun applyEnv(
     }
 
     val matched = propertyPlaceholder.matchEntire(value) ?: return value
+    val placeholder = matched.groupValues[0]
     val envKey = matched.groupValues[1]
     val envValue = env[envKey] ?: return value
 
-    return value.replace(matched.groupValues[0], envValue)
+    return value.replace(placeholder, envValue)
 }
 
 private val propertyPlaceholder = Regex("""\$\{([\w-.]+)}""")
