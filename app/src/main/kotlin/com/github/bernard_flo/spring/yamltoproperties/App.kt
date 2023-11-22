@@ -80,14 +80,12 @@ fun readProfiledYaml(
     inputPath: Path,
 ): ProfiledProperties {
 
-    val profile = profiledYamlFileNameRegex.matchEntire(inputPath.fileName.toString())!!.groupValues[1]
+    val profile = inputPath.fileName.toString().removePrefix("application-").removeSuffix(".yml")
 
     val document = Yaml().load(inputPath.inputStream()) as Any
     val properties = documentToProperties(document)
     return ProfiledProperties(profile, properties)
 }
-
-private val profiledYamlFileNameRegex = Regex("""application-(\w+)\.yml""")
 
 fun writePropertiesMap(
     outputDir: String,
