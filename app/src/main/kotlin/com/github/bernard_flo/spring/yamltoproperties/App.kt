@@ -163,9 +163,10 @@ fun applyEnv(
     profiledPropertiesMap: Map<Profile, ProfiledProperties>,
 ): Map<Profile, ProfiledProperties> {
 
-    val profileEnvMap = Path(envDir).listDirectoryEntries("*.json")
+    val profileEnvMap = Path(envDir).listDirectoryEntries("env*.json")
         .associate { envPath ->
-            val profile = envPath.fileName.toString().removeSuffix(".json")
+            val variation = envPath.fileName.toString().removePrefix("env").removeSuffix(".json")
+            val profile = if (variation == "") null else variation.removePrefix("-")
             val env = Json.decodeFromString(envPath.readText()) as Map<String, String>
             profile to env
         }
