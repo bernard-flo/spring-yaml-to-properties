@@ -97,7 +97,8 @@ fun writePropertiesMap(
     File(outputDir).mkdirs()
 
     profiledPropertiesMap.forEach { (profile, profiledProperties) ->
-        val outputPath = Paths.get(outputDir, "application-$profile.properties")
+        val fileName = if (profile == null) "application.properties" else "application-$profile.properties"
+        val outputPath = Paths.get(outputDir, fileName)
         val lines = profiledProperties.properties.toList()
             .sortedBy { it.first }
             .map { (key, value) -> "$key=$value" }
