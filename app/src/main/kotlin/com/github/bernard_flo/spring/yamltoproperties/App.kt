@@ -144,12 +144,16 @@ fun mergeProperties(
 
 
     val defaultProperties = profiledPropertiesMap[null]?.properties ?: emptyMap()
+    val profiledPropertiesMapWithoutDefault = profiledPropertiesMap.filterKeys { it != null }
 
-    return profiledPropertiesMap
-        .filterKeys { it != null }
-        .mapValues { (_, profiledProperties) ->
-            ProfiledProperties(profiledProperties.profile, defaultProperties + profiledProperties.properties)
-        }
+    return if (profiledPropertiesMapWithoutDefault.isEmpty()) {
+        mapOf(null to ProfiledProperties(null, defaultProperties))
+    } else {
+        profiledPropertiesMapWithoutDefault
+            .mapValues { (_, profiledProperties) ->
+                ProfiledProperties(profiledProperties.profile, defaultProperties + profiledProperties.properties)
+            }
+    }
 }
 
 
