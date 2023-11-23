@@ -25,9 +25,9 @@ fun main(
         ArgParser(args).parseInto(::Args).run {
 
             val profiledPropertiesList =
-                readBootstrapYaml(inputDir) +
-                        readDefaultYaml(inputDir) +
-                        readProfiledYamls(inputDir)
+                readDefaultYaml(inputDir) +
+                        readProfiledYamls(inputDir) +
+                        readBootstrapYaml(inputDir)
             val mergedProfiledPropertiesMap = mergeProperties(profiledPropertiesList)
             val envApplied = envDir?.let { applyEnv(it, mergedProfiledPropertiesMap) } ?: mergedProfiledPropertiesMap
             writePropertiesMap(outputDir, envApplied)
